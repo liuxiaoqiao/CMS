@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:ehcache="http://ehcache-spring-annotations.googlecode.com/svn/schema/ehcache-spring"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	    http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context-3.0.xsd 
+		http://www.springframework.org/schema/aop 
+		http://www.springframework.org/schema/aop/spring-aop-3.0.xsd 
+		http://www.springframework.org/schema/tx 
+	    http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+	    http://ehcache-spring-annotations.googlecode.com/svn/schema/ehcache-spring  
+  		http://ehcache-spring-annotations.googlecode.com/svn/schema/ehcache-spring/ehcache-spring-1.1.xsd">
+	<import resource="security_config/spring-security.xml" />
+
+
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"
+		destroy-method="close">
+		<property name="driverClass">
+			<value>${jdbc.driverClassName}</value>
+		</property>
+		<property name="jdbcUrl">
+			<value>${jdbc.url}</value>
+		</property>
+		<property name="user">
+			<value>${jdbc.user}</value>
+		</property>
+		<property name="password">
+			<value>${jdbc.password}</value>
+		</property>
+
+		<property name="minPoolSize">
+			<value>1</value>
+		</property>
+		<property name="maxPoolSize">
+			<value>20</value>
+		</property>
+		<property name="maxStatements">
+			<value>0</value>
+		</property>
+		<property name="acquireIncrement">
+			<value>5</value>
+		</property>
+		<property name="idleConnectionTestPeriod">
+			<value>3600</value>
+		</property>
+		<property name="maxIdleTime">
+			<value>600</value>
+		</property>
+	</bean>
+
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+				<property name="locations"  >
+			<list>
+				<value>classpath:jdbc.properties</value>
+				<value>classpath:CMS.properties</value>
+			</list>
+		</property>
+		<property name="fileEncoding">
+			<value>UTF-8</value>
+		</property>
+	</bean>
+
+	<bean id="sqlMapClient" class="org.springframework.orm.ibatis.SqlMapClientFactoryBean">
+		<!-- <property name="configLocation" value="classpath:SqlMapConfig.xml" 
+			/> -->
+		<property name="configLocations">
+			<value>classpath:com/foxconn/SqlMapConfig.xml</value>
+			<!-- <list> <value>classpath:com/foxconn/educloud/managerplatform/admin/AdminSqlMapConfig.xml 
+				</value> </list> -->
+		</property>
+		<property name="lobHandler">
+			<ref local="oracleLobHandler" />
+		</property>
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+	<bean id="sqlMapClientTemplate" class="org.springframework.orm.ibatis.SqlMapClientTemplate">
+		<property name="sqlMapClient" ref="sqlMapClient" />
+	</bean>
+
+	<aop:aspectj-autoproxy />
+
+	<context:component-scan base-package="com.foxconn" />
+
+	<context:annotation-config />
+
+	<tx:annotation-driven transaction-manager="transactionManager" />
+
+	<bean id="nativeJdbcExtractor"
+		class="org.springframework.jdbc.support.nativejdbc.CommonsDbcpNativeJdbcExtractor"
+		lazy-init="true" />
+	<bean id="oracleLobHandler" class="org.springframework.jdbc.support.lob.OracleLobHandler"
+		lazy-init="true">
+		<property name="nativeJdbcExtractor">
+			<ref local="nativeJdbcExtractor" />
+		</property>
+	</bean>
+
+	<bean id="ibatisTransactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+	<!-- 配置事务特性 rollback-for:回滾 -->
+	<tx:advice id="ibatisTxAdvice" transaction-manager="ibatisTransactionManager">
+		<tx:attributes>
+			<tx:method name="load*" read-only="true" />
+			<tx:method name="get*" read-only="true" />
+			<tx:method name="select*" read-only="true" />
+			<tx:method name="create*" propagation="REQUIRED"
+				rollback-for="java.lang.Exception" />
+			<tx:method name="save*" propagation="REQUIRED"
+				rollback-for="java.lang.Exception" />
+			<tx:method name="update*" propagation="REQUIRED"
+				rollback-for="java.lang.Exception" />
+			<tx:method name="delete*" propagation="REQUIRED"
+				rollback-for="java.lang.Exception" />
+			<tx:method name="insert*" propagation="REQUIRED" read-only="false"
+				rollback-for="java.lang.Exception" />
+			<tx:method name="add*" propagation="REQUIRED" rollback-for="java.lang.Exception" />
+			<tx:method name="modify*" propagation="REQUIRED"
+				rollback-for="java.lang.Exception" />
+			<tx:method name="validate*" propagation="REQUIRED"
+				rollback-for="java.lang.Exception" />
+			<tx:method name="check*" propagation="REQUIRED"
+				rollback-for="java.lang.Exception" />
+
+			<tx:method name="*" />
+		</tx:attributes>
+	</tx:advice>
+
+	<!-- 配置哪些类的方法进行事务管理 -->
+	<aop:config>
+		<aop:advisor advice-ref="ibatisTxAdvice"
+			pointcut="execution(* com.foxconn.educloud.managerplatform.student.service..*.*(..))"
+			order="1" />
+		<aop:advisor advice-ref="ibatisTxAdvice"
+			pointcut="execution(* com.foxconn.educloud.managerplatform.teacher.service..*.*(..))"
+			order="2" />
+		<aop:advisor advice-ref="ibatisTxAdvice"
+			pointcut="execution(* com.foxconn.educloud.managerplatform.system.service..*.*(..))"
+			order="3" />
+		<aop:advisor advice-ref="ibatisTxAdvice"
+			pointcut="execution(* com.foxconn.educloud.managerplatform.admin.service..*.*(..))"
+			order="4" />
+	</aop:config>
+
+
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver"
+		p:prefix="/WEB-INF/pages/" p:suffix=".jsp" />
+	<bean
+
+		class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+
+		<property name="messageConverters">
+
+			<list>
+
+				<ref bean="jsonHttpMessageConverter" />
+
+			</list>
+		</property>
+	</bean>
+
+
+
+	<bean id="jsonHttpMessageConverter"
+
+		class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter">
+
+	</bean>
+	<!-- file upload -->
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="defaultEncoding">
+			<value>UTF-8</value>
+		</property>
+		<property name="maxUploadSize">
+			<value>30000000</value>
+		</property>
+<!-- added by Cube @130725 -->
+	</bean>
+		<bean
+		class="org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping">
+		<property name="interceptors">
+			<list>
+				<bean class="com.foxconn.security.interceptor.UnauthorizedAccessInterceptor" />
+			</list>
+		</property>
+	</bean>
+
+</beans>

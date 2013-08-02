@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+		"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="InterviewOnlineSQL">
+<typeAlias alias="interviewOnline" type="com.foxconn.cms.interviewonline.pojo.InterviewOnline"/>
+ <typeAlias alias="selectBean" type="com.foxconn.pojo.SelectBean"/>  
+<select id="getInterviewOnlineList" resultClass="interviewOnline" parameterClass="java.lang.String">
+        SELECT a.INTERVIEW_ID interviewID,
+         a.GUEST_NAME guestName,
+         a.INTERVIEW_TITLE interviewTitle,
+         a.INTERVIEW_DATE interviewDate,
+         B.INFO_NAME status
+    FROM TRAFFIC_INTERVIEW_INFO_T a, TRAFFIC_BASE_INFO_T b
+   WHERE A.STATUS = B.INFO_ID AND A.IS_DEL = '0' AND B.IS_DEL = '0'
+    <dynamic>
+			<isNotEmpty  prepend="and" property="value">
+				 a.INTERVIEW_TITLE like '%'||#interviewTitle#||'%'
+	    	</isNotEmpty>
+	    	</dynamic>
+ORDER BY a.ENTRY_DATE
+</select>
+<select id="getInterviewOnlineInfo" resultClass="interviewOnline" parameterClass="java.lang.String">
+       SELECT INTERVIEW_ID interviewID,
+       INTERVIEW_TITLE interviewTitle,
+       INTERVIEW_DATE interviewDate,
+       GUEST_NAME guestName,
+       GUEST_DESC guestDesc,
+       INTERVIEW_SUMMARY interviewSummary,
+       INTERVIEW_CONTENT interviewContent,
+       APPROVALER approvaler
+  FROM TRAFFIC_INTERVIEW_INFO_T
+ WHERE INTERVIEW_ID = #interviewID#
+</select>
+<update id="deleteInterviewOnline" parameterClass="java.util.Map">
+UPDATE TRAFFIC_INTERVIEW_INFO_T
+   SET is_del = '1', MODIFY_DATE = SYSDATE, MODIFY_USER = #userID#
+ WHERE INTERVIEW_ID =#interviewID#
+</update>
+<update id="reviewInterviewOnline" parameterClass="java.util.Map">
+  UPDATE TRAFFIC_INTERVIEW_INFO_T
+   SET STATUS=7, MODIFY_USER = #userID#, MODIFY_DATE = SYSDATE
+ WHERE INTERVIEW_ID = #interviewID#
+
+  
+  </update>
+  <update id="updateBackStatus" parameterClass="java.util.Map">
+  UPDATE TRAFFIC_INTERVIEW_INFO_T
+   SET STATUS=8, MODIFY_USER = #userID#, MODIFY_DATE = SYSDATE
+ WHERE INTERVIEW_ID = #interviewID#
+
+  
+  </update>
+  <insert id="recordBackReason" parameterClass="java.util.Map">
+  INSERT INTO TRAFFIC_REFUSE_RECORD_T (ID,
+                                     NEWS_ID,
+                                     REFUSE_DESC,
+                                     ENTRY_USER,
+                                     ENTRY_DATE,
+                                     NEWS_TYPE)
+     VALUES (SYS_GUID (),
+             #interviewID#,
+             #refuseDesc#,
+             #userID#,
+             SYSDATE,
+             12)
+  </insert>
+  <insert id="saveInterviewOnlineByAdd" parameterClass="interviewOnline">
+  INSERT INTO TRAFFIC_INTERVIEW_INFO_T (INTERVIEW_ID,
+                                      INTERVIEW_TITLE,
+                                      INTERVIEW_PHOTOS_NAME,
+                                      INTERVIEW_PHOTOS_URL,
+                                      INTERVIEW_CONTENT,
+                                      ENTRY_USER,
+                                      ENTRY_DATE,
+                                      IS_DEL,
+                                      GUEST_NAME,
+                                      GUEST_PHOTOS_Name,
+                                      GUEST_PHOTOS_URL,
+                                      GUEST_DESC,
+                                      APPROVALER,
+                                      STATUS,
+                                      INTERVIEW_DATE,
+                                      INTERVIEW_SUMMARY)
+     VALUES (#interviewID#,
+             #interviewTitle#,
+             #curPhotoName#,
+             #curPhotoURL#,
+             #interviewContent#,
+             #operUser#,
+             SYSDATE,
+             '0',
+             #guestName#,
+             #guestPhotoName#,
+             #guestPhotoURL#,
+             #guestDesc#,
+             #approvaler#,
+             #operType#,
+             #interviewDate#,
+             #interviewSummary#)
+  </insert>
+   <update id="saveInterviewOnlineByEdit" parameterClass="interviewOnline">
+  UPDATE TRAFFIC_INTERVIEW_INFO_T
+   SET INTERVIEW_TITLE = #interviewTitle#,
+       INTERVIEW_PHOTOS_NAME = decode(#curPhotoName#,'',INTERVIEW_PHOTOS_NAME,#curPhotoName#),
+       INTERVIEW_PHOTOS_URL = decode(#curPhotoURL#,'',INTERVIEW_PHOTOS_URL,#curPhotoURL#),
+       INTERVIEW_CONTENT = #interviewContent#,
+       MODIFY_DATE = SYSDATE,
+       MODIFY_USER = #operUser#,
+       GUEST_NAME = #guestName#,
+       GUEST_PHOTOS_URL = decode(#guestPhotoURL#,'',GUEST_PHOTOS_URL,#guestPhotoURL#),
+       GUEST_DESC = #guestDesc#,
+       APPROVALER = #approvaler#,
+       INTERVIEW_DATE = #interviewDate#,
+       INTERVIEW_SUMMARY = #interviewSummary#,
+       GUEST_PHOTOS_NAME = decode(#guestPhotoName#,'',GUEST_PHOTOS_NAME,#guestPhotoName#),
+       STATUS=#operType#
+ WHERE INTERVIEW_ID = #interviewID#
+  </update>
+</sqlMap>

@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+ PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="TextNews">
+<typeAlias alias="textNews"  type="com.foxconn.cms.textnews.pojo.TextNews"/>
+<typeAlias alias="newsRefuseRecord"  type="com.foxconn.cms.textnews.pojo.NewsRefuseRecord"/>
+<typeAlias alias="pageNewsRef"  type="com.foxconn.cms.textnews.pojo.PageNewsRef"/>
+<typeAlias alias="selectBean"  type="com.foxconn.pojo.SelectBean" />
+
+  <select id="selectDateSource"  parameterClass="selectBean" resultClass="selectBean">
+  	  select
+		INFO_ID as value,
+		INFO_NAME as label
+		from
+		TRAFFIC_BASE_INFO_T
+		where Type_id=4
+		and is_del='0'
+		order by
+	  INFO_ID asc 
+  </select>
+  
+  <select id="selectNewsSource" parameterClass="selectBean" resultClass="selectBean">
+  	select
+		INFO_ID as value,
+		INFO_NAME as label
+		from
+		TRAFFIC_BASE_INFO_T
+		where Type_id=1
+		and is_del='0'
+		order by
+	  INFO_ID asc 
+  </select>
+  
+  <select id="selectNewSourceName" parameterClass="textNews" resultClass="java.lang.String">
+  	 select info_name from TRAFFIC_BASE_INFO_T where Type_id=1 and info_id=#newsSource# and is_del='0'
+  </select>
+  
+
+  <select id="getOutTextNewsList" parameterClass="textNews" resultClass="textNews">
+    select a.news_id newsID,a.News_Title newsTitle,to_char(a.entry_date,'yyyy/MM/dd') entryDate,
+    a.NEWS_CONTENT newsContent,a.NEWS_SOURCE newsSource,b.info_name newsSourceName,
+    a.DATA_SOURCE dataSource,c.info_name dataSourceName
+  	from Traffic_Text_News_Info_T a
+  	join  Traffic_Base_Info_T b
+  	on a.NEWS_SOURCE=b.INFO_ID
+    join  Traffic_Base_Info_T c
+    on a.DATA_SOURCE=c.INFO_ID
+    where a.is_del='0'
+     and  b.is_del='0'
+     and  c.is_del='0'
+     and a.Program_Type is null
+     and a.News_Part_Tag='1'  
+     <dynamic>
+     	<isNotEmpty prepend="and" property="sDataSource">
+     		a.DATA_SOURCE=#dataSource#
+     	</isNotEmpty>
+     	<isNotEmpty prepend="and" property="newsTitle">
+     		a.News_Title like '%'||decode(#newsTitle#,'',a.News_Title,#newsTitle#)||'%'	
+     	</isNotEmpty>
+     </dynamic>
+
+  </select>
+
+  <select id="getTextNewsList"  parameterClass="textNews"  resultClass="textNews">
+   select a.news_id newsID,a.News_Title newsTitle,to_char(a.entry_date,'yyyy/MM/dd') entryDate,
+   a.entry_user entryuser,a.News_Status newsStatusID,b.info_name newsStatusName
+   from 
+    Traffic_Text_News_Info_T a
+   join  Traffic_Base_Info_T b
+   on a.News_Status = b.Info_ID
+   and b.is_del='0'
+   and a.is_del='0'
+   where a.News_Part_Tag='1'
+   <dynamic>
+   	<isNotEmpty prepend="and" property="programType">
+	a.Program_Type = #programType#	
+    </isNotEmpty>
+   <isNotEmpty prepend="and" property="newsID">
+	a.News_ID = #newsID#	
+    </isNotEmpty>
+   <isNotEmpty prepend="and" property="newsTitle">
+	 a.News_Title like '%'||decode(#newsTitle#,'',a.News_Title,#newsTitle#)||'%'	
+   </isNotEmpty>
+    <isNotEmpty prepend="and" property="entryUser">
+	 a.entry_user like '%'||decode(#entryUser#,'',a.entry_user,#entryUser#)||'%'
+   </isNotEmpty>
+    <isNotEmpty prepend="and" property="pressDateS">
+      a.entry_DATE >=to_date(#pressDateS#,'yyyy/MM/dd')
+   </isNotEmpty>
+   <isNotEmpty prepend="and" property="pressDateE">
+      a.entry_DATE  
+      <![CDATA[ ROWNUM <=to_date(#pressDateE#,'yyyy/MM/dd')]]>
+   </isNotEmpty>
+   </dynamic>
+   order by a.modify_Date desc
+  </select>
+  
+   <insert id="insertTextNews" parameterClass="textNews">
+   	insert into Traffic_Text_News_Info_T(NEWS_ID,NEWS_SUMMARY,SUB_NEWS_TITLE,NEWS_CONTENT,
+     NEWS_STATUS, NEWS_SOURCE ,NEWS_PART_TAG,
+     NEWS_KEY_WORD ,ENTRY_USER,
+     ENTRY_DATE ,MODIFY_DATE, MODIFY_USER,IS_DEL,
+      SECTION_POSTION ,APPROVALER,
+      writer,
+      EFFECTIVECOUNT,EMOTIONALCOUNT,HAPPYCOUNT ,NONSENSECOUNT,BORINGCOUNT,FEARCOUNT,SADCOUNT,ANGRYCOUNT,
+     DATA_SOURCE, PROGRAM_TYPE, NEWS_TITLE,READCOUNT,<!-- PRESS_DATE,-->
+     Is_Photos_Show
+     )
+ 	values(#newsID#,#newsSummary#,#subNewsTitle#,#newsContent#,#newsStatusID#,
+ 	#newsSource#,'1',#newsKeyWord#,#entryUser#,sysdate,sysdate,#modifyUser#,'0',	
+ 	 #sectionPosition#,#approvaler#,
+ 	 #writer#,
+ 	 '0','0','0','0','0','0','0','0',
+ 	#dataSource#,#programType#,#newsTitle#,'0',<!--sysdate,-->
+ 	#isPhotosShow#
+ 	 ) 
+   </insert>
+   
+   <!--新增分发关系 -->
+   <insert id="insertPageNewsRef" parameterClass="pageNewsRef">
+   	insert into TRAFFIC_PAGE_NEWS_REF_T(PAGE_ID,NEWS_ID,CREATE_USER,CREATE_DATE,UPDATE_USER,UPDATE_DATE,IS_DEL,IS_FIRST)
+   	values(#pageID#,#newsID#,#createUser#,sysdate,sysdate,#modifyUser#,'0',#isFirst#)
+   </insert>
+   
+   <update id="updateTextNews" parameterClass="textNews">
+   	 update  Traffic_Text_News_Info_T
+   	 set news_title=#newsTitle#,SECTION_POSTION=#sectionPosition#,NEWS_SUMMARY=#newsSummary#,
+   	 SUB_NEWS_TITLE=#subNewsTitle#,
+   	 News_Source=#newsSource#,News_Key_Word=#newsKeyWord#,
+   	 writer=#writer#,Is_Photos_Show=#isPhotosShow#,
+     Approvaler=#approvaler#,
+   	 NEWS_CONTENT=#newsContent#,MODIFY_DATE=sysdate,MODIFY_USER=#modifyUser#,program_Type=#programType#,
+   	 NEWS_STATUS=#newsStatusID#
+   	 where 	News_ID = #newsID#
+   </update>
+   
+   
+   <!--提供编辑页面初始化 -->
+   <select id="getTextNewsDetail" parameterClass="textNews" resultClass="textNews">
+   	 select a.news_id newsID,a.News_Title newsTitle,a.Sub_News_Title subNewsTitle,
+   	 a.News_Content newsContent,a.Section_Postion sectionPosition,a.entry_date entryDate,
+   	 a.writer writer,a.News_Source newsSource,b.info_name newsSourceName,
+   	 a.News_Key_Word newsKeyWord,a.News_Summary newsSummary,a.Approvaler approvaler,
+   	 a.Is_Photos_Show isPhotosShow,
+   	 a.Program_Type  programType,
+   	 a.NEWS_STATUS newsStatusID
+   	 from   Traffic_Text_News_Info_T a
+   	 join Traffic_Base_Info_T b
+   	 on a.News_Source= b.Info_ID
+   	 and a.is_del='0'
+   	 and b.is_del='0'
+   	 where a.is_del='0'
+   	 and a.news_id=#newsID#
+   </select>
+   
+   <!--预览-->
+   <select id="preViewTextNews" parameterClass="textNews" resultClass="textNews">
+   select  a.news_id newsID,a.news_title newsTitle,a.SUB_NEWS_TITLE subNewsTitle,
+   a.NEWS_CONTENT newsContent,
+    a.NEWS_SOURCE newsSource,b.INFO_NAME newsSourceName,
+     a.READCOUNT readRecordCount,
+    a.EFFECTIVECOUNT effectiveCount,a.EMOTIONALCOUNT emotionalCount,
+    a.HAPPYCOUNT happyCount,a.NONSENSECOUNT nonsenseCount,a.BORINGCOUNT boringCount,
+    a.FEARCOUNT fearCount,a.SADCOUNT sadCount,a.ANGRYCOUNT angryCount
+    from  Traffic_Text_News_Info_T a
+    join Traffic_Base_Info_T b
+    on  a.NEWS_SOURCE=b.INFO_ID
+    and b.IS_DEL='0'
+    where 1=1
+    <dynamic>
+	 <isNotEmpty prepend="and" property="newsID">
+			a.News_ID = #newsID#	
+	 </isNotEmpty>
+	</dynamic>
+   </select>
+   
+   <!-- 拒绝记录查询 -->
+   <select id="getNewsRefuseRecordList" parameterClass="newsRefuseRecord" resultClass="newsRefuseRecord">
+   	  select ID refuseReCordID,News_ID newsID,Refuse_Desc refuseDesc,
+   	  ENTRY_USER entryUser,ENTRY_DATE entryDate,News_Type newsType
+   	  from Traffic_Refuse_Record_T a
+   	  where a.News_ID = #newsID#
+   	  and  a.News_Type=#newsType#
+   </select>
+   
+   <!--判断是否第一次分发 -->
+   <select id="validateIsFirstDis">
+   	 select count(*)
+   	 from Traffic_Page_News_Ref_T
+   	 where is_del='0'
+   	 and is_first='1'
+   	 and  News_ID =#newsID#
+   	 page_ID = #pageID#
+   </select>
+   
+   <!--删除文字新闻 （注：删除源文件；逻辑删除） -->
+   <update id="deleteTextNews" parameterClass="textNews">
+   	  update Traffic_Text_News_Info_T
+   	  set is_del='1',modify_date=sysdate,modify_user=#modifyUser#
+   	  where News_ID = #newsID#
+   </update>
+   
+   <!--删除文字新闻（注：删除被分发的文件；逻辑删除） -->
+   <update id="deletePageNewsRef" parameterClass="pageNewsRef">
+   	 update Traffic_Page_News_Ref_T
+   	  set is_del='1',UPDATE_DATE = sysdate,UPDATE_USER=#modifyUser#
+   	  where News_ID = #newsID#
+   	      <dynamic>
+	 <isNotEmpty prepend="and" property="pageID">
+			page_ID = #pageID#	
+	 </isNotEmpty>
+	</dynamic>
+   </update>
+   
+   <!--新增退回记录 -->
+   <insert id="insertRefuseTextNews" parameterClass="newsRefuseRecord">
+   	 insert into Traffic_Refuse_Record_T(
+   	 ID,News_ID,Refuse_Desc,ENTRY_USER,ENTRY_DATE,News_Type
+   	 )
+   	 values(sys_guid(),#newsID#,#refuseDesc#,#entryUser#,sysdate,#newsType#)
+   </insert>
+   
+    <update id="updateTextNewsStatus" parameterClass="textNews">
+      update Traffic_Text_News_Info_T
+   	  set NEWS_STATUS=#newsStatusID#,modify_date=sysdate,modify_user=#modifyUser#
+   	  where News_ID = #newsID#
+   </update>
+
+    	
+    	
+</sqlMap>

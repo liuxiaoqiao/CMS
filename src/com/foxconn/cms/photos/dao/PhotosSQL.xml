@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+ PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="Photos">
+ <typeAlias alias="photosNews"  type="com.foxconn.cms.photos.pojo.PhotosNews"/>
+ <typeAlias alias="photosInfo"  type="com.foxconn.cms.photos.pojo.PhotosInfo"/>
+ <select id="getPhotosNewsList" parameterClass="photosNews" resultClass="photosNews">
+ 	select a.Photos_News_ID photosNewsID,a.Photos_News_Title photosNewsTitle,a.Sub_Photos_News_Title subPhotosNewsTitle,
+ 	b.photo_id mainPhotosID,b.photo_name mainPhotosName,b.photo_url mainPhotosUrl,
+ 	a.Photos_News_Status photosNewsStatus,c.info_name statusName,
+ 	a.entry_user entryUser,to_char(a.entry_date,'yyyy.MM.dd') entryDate
+ 	from Traffic_Photos_News_T a
+    left join Traffic_Photo_Info_T b
+ 	on a.Photos_News_ID=b.Photos_News_ID
+ 	and b.is_del='0'
+ 	and b.Is_Main_Photo='1'
+ 	join Traffic_Base_Info_T c
+ 	on c.info_id = a.Photos_News_Status
+ 	and c.is_del='0'
+ 	where a.is_del='0'
+ 	<dynamic>
+     <isNotEmpty prepend="and" property="entryUser">
+     a.entry_user like '%'||decode(#entryUser#,'',a.entry_user,#entryUser#)||'%'	
+     </isNotEmpty>
+     <isNotEmpty prepend="and" property="photosNewsTitle">
+     a.Photos_News_Title like '%'||decode(#photosNewsTitle#,'',a.Photos_News_Title,#photosNewsTitle#)||'%'	
+     </isNotEmpty>
+     <isNotEmpty prepend="and" property="pressDateS">
+      a.entry_DATE >=to_date(#pressDateS#,'yyyy/MM/dd')
+     </isNotEmpty>
+     <isNotEmpty prepend="and" property="pressDateE">
+      a.entry_DATE  
+      <![CDATA[ ROWNUM <=to_date(#pressDateE#,'yyyy/MM/dd')]]>
+     </isNotEmpty>
+    </dynamic>
+ </select>
+ 
+  <select id="getPhotosInfoList" parameterClass="photosInfo" resultClass="photosInfo">
+  	 select 
+  	 a.PHOTO_ID photosID,a.PHOTO_NAME photosName,a.PHOTO_URL photosUrl,a.PHOTO_ORDER photosOrder,
+  	 a.PHOTO_DESC photosDesc,a.IS_MAIN_PHOTO isMainPhotos
+  	 from TRAFFIC_PHOTO_INFO_T a
+  	 where a.PHOTOS_NEWS_ID=#photosNewsID#
+  </select>
+ 
+  <insert id="insertPhotosNews" parameterClass="photosNews">
+  	 insert into  Traffic_Photos_News_T(
+  	  Photos_News_ID,Photos_News_Title,Photos_News_Status,
+  	  ENTRY_USER,ENTRY_DATE,MODIFY_DATE,MODIFY_USER,
+  	  Is_Del,Approvaler,Writer,Sub_Photos_News_Title,
+  	  Photos_News_Source,Photos_News_Desc
+  	 )
+  	 values(
+  	 #photosNewsID#,#photosNewsTitle#,#photosNewsStatus#,
+  	 #entryUser#,sysdate,#modifyUser#,sysdate,
+  	 '0',#approvaler#,#writer#,#subPhotosNewsTitle#,
+  	 #photosNewsSource#,#photosNewsDesc#
+  	 )
+  </insert>
+  
+   <insert id="insertPhotosInfo" parameterClass="photosInfo">
+  	 insert into Traffic_Photos_Info_T(
+  	  Photo_ID,Photo_Name,Photo_Url,
+  	  ENTRY_USER,ENTRY_DATE,MODIFY_DATE,MODIFY_USER,
+  	  Is_Del,Photo_Order,Photos_News_ID,Photo_Desc,
+  	  Is_Main_Photos
+  	 )
+  	 values(
+  	 #photosID#,#photosName#,#photosUrl#,
+  	 #entryUser#,sysdate,#modifyUser#,sysdate,
+  	 '0',#photosOrder#,#photosNewsID#,#photosDesc#,
+  	 #isMainPhotos#
+  	 )
+  </insert>
+        
+  <update id="updatePhotosNews" parameterClass="photosNews">
+     update Traffic_Photos_News_T
+     set Photos_News_Title=#photosNewsTitle#,Photos_News_Status=#photosNewsStatus#,Sub_Photos_News_Title=#subPhotosNewsTitle#,
+     Writer=#writer#,MODIFY_DATE=sysdate,MODIFY_USER=#modifyUser#,
+     Approvaler=#approvaler#,Photos_News_Source=#photosNewsSource#
+     where Photos_News_ID=#photosNewsID#
+  </update>
+  
+  <update id="deletePhotosNews" parameterClass="photosNews">
+  	  update Traffic_Photos_News_T
+  	  set is_del='1',MODIFY_DATE=sysdate,MODIFY_USER=#modifyUser#
+  	  where Photos_News_ID=#photosNewsID#
+  </update>
+  
+  <update id="updatePhotosNewsStatus" parameterClass="photosNews">
+      update Traffic_Photos_News_T
+   	  set PHOTOS_NEWS_STATUS=#photosNewsStatus#,modify_date=sysdate,modify_user=#modifyUser#
+   	  where  PHOTOS_NEWS_ID = #photosNewsID#
+  </update>
+
+   
+
+</sqlMap>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+ PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="SpecialColumn">
+  <typeAlias alias="specialcolumn"  type="com.foxconn.cms.specialcolumn.pojo.SpecialColumn"/>
+  
+    <select id="getSpecialColumnDetail" parameterClass="specialcolumn" resultClass="specialcolumn">
+      select 
+      a.Column_ID columnID,a.Column_Title columnTitle,a.Column_Photos_name columnPhotosName,
+      a.Column_Photos_Url columnPhotosUrl,a.Column_Url columnUrl,a.Is_Show isShow,
+      a.ENTRY_USER entryUser,to_char(a.ENTRY_DATE,'yyyy.MM.dd') entryDate,
+      to_char(MODIFY_DATE,'yyyy.MM.dd') modifyDate,MODIFY_USER modifyUser
+      from Traffic_Special_Column_T a
+      where 
+      Is_Del='0'
+      and a.Column_ID=#columnID#
+    </select>
+    <select id="getSpecialColumnList" parameterClass="specialcolumn" resultClass="specialcolumn">
+      select 
+      a.Column_ID columnID,a.Column_Title columnTitle,a.Column_Photos_name columnPhotosName,
+      a.Column_Photos_Url columnPhotosUrl,a.Column_Url columnUrl,decode(a.Is_Show,'0','否','是') isShow,
+      a.ENTRY_USER entryUser,to_char(a.ENTRY_DATE,'yyyy.MM.dd') entryDate,
+      to_char(MODIFY_DATE,'yyyy.MM.dd') modifyDate,MODIFY_USER modifyUser
+      from Traffic_Special_Column_T a
+      where 
+      Is_Del='0'
+      <dynamic>
+     	<isNotEmpty prepend="and" property="columnTitle">
+     	 a.Column_Title like '%'||decode(#columnTitle#,'',a.Column_Title,#columnTitle#)||'%'	
+     	</isNotEmpty>
+     </dynamic>
+     order by MODIFY_DATE desc
+    </select>
+    
+   <update id="deleteSpecialColumn" parameterClass="specialcolumn">
+   	  update Traffic_Special_Column_T
+   	  set is_del='1',modify_date=sysdate,modify_user=#modifyUser#
+   	  where Column_ID = #columnID#
+   </update>
+   
+   <insert id="insertSpecialColumn" parameterClass="specialcolumn">
+   	insert into Traffic_Special_Column_T(Column_ID,Column_Title,Column_Photos_name,Column_Photos_Url,
+   	Column_Url,Is_Show,ENTRY_USER,ENTRY_DATE,MODIFY_DATE,MODIFY_USER,Is_Del)
+   	values(sys_guid(),#columnTitle#,#columnPhotosName#,#columnPhotosUrl#,#columnUrl#,#isShow#,#entryUser#,sysdate,sysdate,#modifyUser#,'0')
+   </insert>
+   
+   <update id="updateSpecialColumn" parameterClass="specialcolumn">
+   	 update Traffic_Special_Column_T 
+   	 set Column_Title=#columnTitle#,Column_Photos_name=#columnPhotosName#,Column_Photos_Url=#columnPhotosUrl#,
+   	 Column_Url=#columnUrl#,Is_Show=#isShow#,MODIFY_DATE=sysdate,MODIFY_USER=#modifyUser#
+   	 where Column_ID=#columnID#
+   </update>
+    
+</sqlMap>

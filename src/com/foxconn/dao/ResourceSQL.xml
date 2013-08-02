@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+		"http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="AuthorityResource">
+	<typeAlias alias="Resource" type="com.foxconn.pojo.AuthorityResource" />
+	<select id="getAVResourceByType" parameterClass="String"
+		resultClass="Resource">
+		select
+		RESOURCE_ID as resourceId,
+		RESOURCE_NAME as resourceName,
+		RESOURCE_TYPE as
+		resourceType,
+		RESOURCE_VALUE as resourceValue,
+		RESOURCE_PRIORITY as
+		resourcePriority,
+		CREATE_DATE as createDate,
+		CREATE_USERNO as
+		createUserno,
+		UPDATE_DATE as updateDate,
+		UPDATE_ID as updateId,
+		RESOURCE_DESC as resourceDesc,
+		RESOURCE_DELETEORNOT as deleteOrNot
+		from
+		TRAFFIC_RESOURCE
+		where
+		RESOURCE_TYPE = #resourceType#
+	</select>
+
+	<select id="checkAuthority" parameterClass="java.util.HashMap"
+		resultClass="String">
+		SELECT 'Y' AS Authority
+		FROM TRAFFIC_ROLE_RESOURCE a
+		JOIN
+		TRAFFIC_RESOURCE b
+		ON A.RESOURCE_ID = B.RESOURCE_ID
+		AND A.AUTHORITY = '1'
+		AND A.ROLE_ID = #roleID#
+		AND INSTR (#url#,
+		B.RESOURCE_VALUE) > 0
+		AND B.RESOURCE_DELETEORNOT = '1'
+		UNION
+		SELECT 'Y' AS Authority
+		FROM DUAL
+		WHERE NOT EXISTS
+		(SELECT *
+		FROM TRAFFIC_RESOURCE
+		WHERE INSTR (#url#,
+		RESOURCE_VALUE) > 0)
+	</select>
+</sqlMap>

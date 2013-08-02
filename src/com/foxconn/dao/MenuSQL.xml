@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+		"http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="Menu">
+	<typeAlias alias="Menu" type="com.foxconn.pojo.Menu" />
+	<select id="getMenu" parameterClass="java.util.Map" resultClass="Menu">
+		SELECT a.RESOURCE_ID AS id,
+		a.PARENT_ID AS pId,
+		a.RESOURCE_NAME AS name,
+		a.RESOURCE_VALUE AS url,
+		'mainFrame' AS target,
+		'true' AS open
+		FROM
+		TRAFFIC_RESOURCE a
+		JOIN
+		TRAFFIC_ROLE_RESOURCE b
+		ON A.RESOURCE_ID =
+		B.RESOURCE_ID AND B.ROLE_ID = #roleID#
+		START WITH A.RESOURCE_ID =
+		#parentID#
+		CONNECT BY PRIOR a.RESOURCE_ID = a.parent_id
+		ORDER BY
+		a.resource_id
+	</select>
+
+	<select id="getTopMenu" parameterClass="java.util.Map"
+		resultClass="Menu">
+		SELECT a.RESOURCE_ID AS id, a.RESOURCE_NAME AS name, a.RESOURCE_VALUE AS url
+		FROM TRAFFIC_RESOURCE a
+		JOIN
+		TRAFFIC_ROLE_RESOURCE b
+		ON A.RESOURCE_ID = B.RESOURCE_ID
+		AND B.ROLE_ID = #roleID#
+		AND A.PARENT_ID = #parentID#
+		ORDER BY a.resource_id
+	</select>
+</sqlMap>

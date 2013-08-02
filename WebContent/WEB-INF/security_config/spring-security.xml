@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+           http://www.springframework.org/schema/security
+           http://www.springframework.org/schema/security/spring-security-3.0.xsd">
+	<beans:bean id="loggerListener"
+		class="org.springframework.security.access.event.LoggerListener" />
+
+	<http auto-config="true" access-denied-page="/">
+		<intercept-url pattern="/login.jsp*" filters="none" />
+		<intercept-url pattern="/css/**" filters="none" />
+		<intercept-url pattern="/images/**" filters="none" />
+		<intercept-url pattern="/js/**" filters="none" />
+		<!-- <intercept-url pattern="/fileUp.jsp*" filters="none" />
+		<intercept-url pattern="/imageUp.jsp*" filters="none" /> -->
+		<intercept-url pattern="/" filters="none" />
+		<!-- 登录页面为/login.jsp，登录成功页面为/index.jsp，且总是用这个页面为登录成功页面 -->
+		<form-login login-page="/" default-target-url="/login.do?action=home"
+			authentication-failure-url="/login.jsp?error='error'" />
+		<logout invalidate-session="true" logout-success-url="/" />
+		<intercept-url pattern="/login.do*" access="IS_AUTHENTICATED_FULLY" />
+		<!-- session管理，防止重复登录，同一用户第二次登录会让第一次登录失效 -->
+		<session-management invalid-session-url="/login.do?action=home">
+			<concurrency-control max-sessions="1"
+				error-if-maximum-exceeded="true" />
+		</session-management>
+	</http>
+
+	<authentication-manager alias="authenticationManager">
+		<authentication-provider user-service-ref="securityManager">			
+			<password-encoder hash="md5">
+				<salt-source user-property="username" />
+			</password-encoder>			
+		</authentication-provider>
+	</authentication-manager>
+
+	<beans:bean id="accessDecisionManager"
+		class="org.springframework.security.access.vote.AffirmativeBased">
+		<beans:property name="allowIfAllAbstainDecisions"
+			value="false" />
+		<beans:property name="decisionVoters">
+			<beans:list>
+				<beans:bean class="org.springframework.security.access.vote.RoleVoter" />
+				<beans:bean class="org.springframework.security.access.vote.AuthenticatedVoter" />
+			</beans:list>
+		</beans:property>
+	</beans:bean>
+</beans:beans>

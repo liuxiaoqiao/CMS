@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+		"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="VideoNewsSQL">
+<typeAlias alias="videoNews" type="com.foxconn.cms.videonews.pojo.VideoNews"/>
+ <typeAlias alias="selectBean" type="com.foxconn.pojo.SelectBean"/>  
+<select id="getVideoNewsList" resultClass="videoNews" parameterClass="java.util.Map">
+
+     SELECT a.VIDEO_NEWS_ID videoNewsId,
+       a.VIDEO_NEWS_NAME videoNewsName,
+       a.ENTRY_DATE entryDate,
+       a.ENTRY_USER entryUser,
+       a.APPROVALER approvaler,
+       a.VIDEO_URL videoURL,
+       b.INFO_NAME videoNewsStatus
+  FROM TRAFFIC_VIDEO_NEWS_T a,TRAFFIC_BASE_INFO_T b
+   where a.is_del = '0'   
+   and A.VIDEO_NEWS_STATUS = B.INFO_ID
+  
+  <dynamic>
+			<isNotEmpty  prepend="and" property="videoNewsName">
+				 a.VIDEO_NEWS_NAME like '%'||#videoNewsName#||'%'
+	    	</isNotEmpty>
+	    	<isNotEmpty  prepend="and" property="entryUser">
+				 a.ENTRY_USER like '%'||#entryUser#||'%'
+	    	</isNotEmpty>
+	    	<isNotEmpty  prepend="and" property="startTime">
+				 FLOOR (a.entry_date- TO_DATE (#startTime#, 'yyyy-mm-dd')) >= 0
+	    	</isNotEmpty>
+	    	<isNotEmpty  prepend="and" property="endTime">
+	    	<![CDATA[
+				 FLOOR (a.entry_date - TO_DATE (#endTime#, 'yyyy-mm-dd')) <= 0
+				 	]]>
+	    	</isNotEmpty>
+		</dynamic> 
+		order by  a.entry_date desc
+</select>
+
+<update id="deleteVideoNews" parameterClass="java.util.Map">
+  UPDATE TRAFFIC_VIDEO_NEWS_T
+   SET IS_DEL = '1', MODIFY_USER = #userID#, MODIFY_DATE = SYSDATE
+ WHERE VIDEO_NEWS_ID = #videoNewsId#
+
+  </update>
+<select id="getVideoNewsInfo" resultClass="videoNews" parameterClass="java.lang.String">
+      SELECT VIDEO_NEWS_ID videoNewsId,
+       VIDEO_NEWS_NAME videoNewsName,
+       SUB_VIDEO_NEWS_TITLE subVideoNewsTitle,
+       writer writer,
+       ENTRY_DATE entryDate,
+       APPROVALER approvaler,
+       VIDEO_NEWS_SOURCE videoNewsSource,
+       VIDEO_DESC videoDesc,
+       MAIN_PHOTOS_URL mainPhotosUrl
+  FROM TRAFFIC_VIDEO_NEWS_T
+ WHERE VIDEO_NEWS_ID = #videoNewsId#
+</select>
+<insert id="saveVideoNewsByAdd" parameterClass="videoNews">
+  INSERT INTO TRAFFIC_VIDEO_NEWS_T (VIDEO_NEWS_ID,
+                                  VIDEO_NEWS_NAME,
+                                  SUB_VIDEO_NEWS_TITLE,
+                                  WRITER,
+                                  ENTRY_USER,
+                                  ENTRY_DATE,
+                                  APPROVALER,
+                                  VIDEO_NEWS_SOURCE,
+                                  MAIN_PHOTOS_NAME,
+                                  MAIN_PHOTOS_URL,
+                                  VIDEO_DESC,
+                                  VIDEO_NAME,
+                                  VIDEO_URL,
+                                  VIDEO_NEWS_STATUS,
+                                  IS_DEL)
+     VALUES (#videoNewsId#,
+             #videoNewsName#,
+             #subVideoNewsTitle#,
+             #writer#,
+             #operUser#,
+             SYSDATE,
+             #approvaler#,
+             #videoNewsSource#,
+             #mainPhotosName#,
+             #mainPhotosUrl#,
+             #videoDesc#,
+             #videoName#,
+             #videoURL#,
+             #operType#,
+             '0')
+  </insert>
+<update id="saveVideoNewsByEdit" parameterClass="videoNews">
+  UPDATE TRAFFIC_VIDEO_NEWS_T
+   SET VIDEO_NEWS_NAME = #videoNewsName#,
+       MAIN_PHOTOS_NAME = decode(#mainPhotosName#,'',MAIN_PHOTOS_NAME,#mainPhotosName#),
+       MAIN_PHOTOS_URL = decode(#mainPhotosUrl#,'',MAIN_PHOTOS_URL,#mainPhotosUrl#),
+       SUB_VIDEO_NEWS_TITLE = #subVideoNewsTitle#,
+       MODIFY_DATE = SYSDATE,
+       MODIFY_USER = #operUser#,
+       WRITER = #writer#,
+       VIDEO_NAME = decode(#videoName#,'',VIDEO_NAME,#videoName#),
+       VIDEO_URL = decode(#videoURL#,'',VIDEO_URL,#videoURL#),
+       VIDEO_NEWS_SOURCE = #videoNewsSource#,
+       APPROVALER = #approvaler#,
+       VIDEO_DESC = #videoDesc#,
+        VIDEO_NEWS_STATUS=#operType#
+ WHERE VIDEO_NEWS_ID = #videoNewsId#
+  </update>
+  <update id="reviewVideoNews" parameterClass="java.util.Map">
+  UPDATE TRAFFIC_VIDEO_NEWS_T
+   SET VIDEO_NEWS_STATUS=7, MODIFY_USER = #userID#, MODIFY_DATE = SYSDATE
+ WHERE VIDEO_NEWS_ID = #videoNewsId#
+
+  
+  </update>
+  <update id="updateBackStatus" parameterClass="java.util.Map">
+  UPDATE TRAFFIC_VIDEO_NEWS_T
+   SET VIDEO_NEWS_STATUS=8, MODIFY_USER = #userID#, MODIFY_DATE = SYSDATE
+ WHERE VIDEO_NEWS_ID = #videoNewsId#
+
+  
+  </update>
+  <insert id="recordBackReason" parameterClass="java.util.Map">
+  INSERT INTO TRAFFIC_REFUSE_RECORD_T (ID,
+                                     NEWS_ID,
+                                     REFUSE_DESC,
+                                     ENTRY_USER,
+                                     ENTRY_DATE,
+                                     NEWS_TYPE)
+     VALUES (SYS_GUID (),
+             #videoNewsId#,
+             #refuseDesc#,
+             #userID#,
+             SYSDATE,
+             21)
+  </insert>
+  
+   <!-- 根据id获取videoNewsName -->
+  <select id="getVideoNameByID" parameterClass="java.lang.String" resultClass="videoNews">
+ SELECT video_news_name AS videoNewsName, VIDEO_URL AS videoURL
+  FROM traffic_video_news_t
+  	where
+  	video_news_id = #newsID#
+  </select>
+</sqlMap>

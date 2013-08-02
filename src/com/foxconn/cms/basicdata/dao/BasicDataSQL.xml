@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+ PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="BasicData">
+<typeAlias alias="basicType"  type="com.foxconn.cms.basicdata.pojo.BasicType"/>
+<typeAlias alias="basicInfo"  type="com.foxconn.cms.basicdata.pojo.BasicInfo"/>
+<typeAlias alias="selectBean"  type="com.foxconn.pojo.SelectBean" />
+
+  <select id="getBasicTypeList" parameterClass="basicType" resultClass="basicType">
+    select Type_ID typeID,Type_Name typeName,Type_Desc typeDesc
+  	from Traffic_Base_Type_T
+    where is_del='0'
+     <dynamic>
+     	<isNotEmpty prepend="and" property="typeName">
+     		Type_Name like '%'||decode(#typeName#,'',Type_Name,#typeName#)||'%'	
+     	</isNotEmpty>
+     </dynamic>
+     order by type_id desc
+  </select>
+  
+  <select id="getBasicInfoList" parameterClass="basicInfo" resultClass="basicInfo">
+    select a.Info_ID infoID,a.Info_Name infoName,a.Info_Desc infoDesc,
+    a.Type_ID typeID,b.type_Name typeName
+  	from Traffic_Base_Info_T a
+  	join Traffic_Base_Type_T b
+  	on a.type_id=b.type_id
+  	and b.is_del='0'
+    where a.is_del='0'
+    
+    <dynamic>
+     	<isNotEmpty prepend="and" property="sTypeID">
+     		a.type_id=#typeID#
+     	</isNotEmpty>
+     </dynamic>  
+     <dynamic>
+     	<isNotEmpty prepend="and" property="infoName">
+     		a.info_Name like '%'||decode(#infoName#,'',a.info_Name,#infoName#)||'%'	
+     	</isNotEmpty>
+     </dynamic>
+     order by a.type_id desc
+  </select>
+  
+   <insert id="insertBasicType" parameterClass="basicType">
+   	  insert into Traffic_Base_Type_T(Type_ID,Type_Name,Type_Desc,ENTRY_USER,
+   	  ENTRY_DATE,MODIFY_DATE,MODIFY_USER,IS_DEL)
+   	  values(#typeID#,#typeName#,#typeDesc#,#entryUser#,sysdate,sysdate,#modifyUser#,'0')
+   </insert>
+   
+   <insert id="insertBasicInfo" parameterClass="basicInfo">
+   	  insert into Traffic_Base_Info_T(info_ID,info_Name,info_Desc,ENTRY_USER,
+   	  ENTRY_DATE,MODIFY_DATE,MODIFY_USER,IS_DEL,type_id)
+   	  values(#infoID#,#infoName#,#infoDesc#,#entryUser#,sysdate,sysdate,#modifyUser#,'0',#typeID#)
+   </insert>
+   
+   <update id="updateBasicType" parameterClass="basicType">
+   	 update Traffic_Base_Type_T
+   	 set Type_Name=#typeName#,Type_Desc=#typeDesc#,MODIFY_DATE=sysdate,MODIFY_USER=#modifyUser#
+   	 where Type_ID=#typeID#
+   </update>
+   
+    <update id="updateBasicInfo" parameterClass="basicInfo">
+   	 update Traffic_Base_Info_T
+   	 set info_Name=#infoName#,info_Desc=#infoDesc#,MODIFY_DATE=sysdate,MODIFY_USER=#modifyUser#
+   	 where info_ID=#infoID#
+   </update>
+   
+    <update id="deleteBasicType" parameterClass="basicType">
+   	 update Traffic_Base_Type_T
+   	 set is_del='1',MODIFY_DATE=sysdate,MODIFY_USER=#modifyUser#
+   	 where Type_ID=#typeID#
+   </update>
+     
+   <update id="deleteBasicInfo" parameterClass="basicInfo">
+   	 update Traffic_Base_Info_T
+   	 set is_del='1',MODIFY_DATE=sysdate,MODIFY_USER=#modifyUser#
+   	 where info_ID=#infoID#
+   </update>
+   
+   <select id="getNewBasicTypeID" resultClass="java.lang.Integer">
+   	 select max(type_id)+1 from Traffic_Base_Type_T
+   </select>
+   
+    <select id="getNewBasicInfoID" resultClass="java.lang.Integer">
+   	 select max(info_id)+1 from Traffic_Base_Info_T
+   </select>
+   
+   <select id="getBasicTypeDetail" parameterClass="basicType" resultClass="basicType">
+   	 select Type_ID typeID,Type_Name typeName,Type_Desc typeDesc
+   	 from Traffic_Base_Type_T
+     where is_del='0'
+     and type_ID=#typeID#
+   </select>
+   
+   <select id="getBasicInfoDetail" parameterClass="basicInfo" resultClass="basicInfo">
+   	 select Type_ID typeID,info_Name infoName,info_Desc infoDesc,
+   	 info_ID infoID
+   	 from Traffic_Base_Info_T
+     where is_del='0'
+     and info_ID=#infoID#
+   </select>
+
+	
+</sqlMap>

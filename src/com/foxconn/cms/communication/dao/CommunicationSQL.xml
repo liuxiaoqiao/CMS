@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+ PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="Communication">
+<typeAlias alias="communication"  type="com.foxconn.cms.communication.pojo.Communication"/>
+
+
+   <select id="getCommunicationList" parameterClass="java.util.Map"  resultClass="com.foxconn.cms.communication.pojo.Communication">
+    select bi.info_name as infoname,t.option_id as optionId, t.option_title as optionTitle,t.sub_option_title as subTitle,t.option_status as optionStatus,t.valid_date_s as sDate,t.valid_date_e as eDate,t.option_summary as optionSummary,t.entry_user as Entryuser,t.approvaler as approvaler
+    
+    from traffic_option_collect_t t  left join TRAFFIC_BASE_INFO_T BI on t.option_status=bi.info_id
+       where 1=1
+        <dynamic>
+       <isNotEmpty prepend="and" property="optionId">
+         t.option_id =#optionId#
+     	</isNotEmpty>
+     	
+     	<isNotEmpty prepend="and" property="optionTitle">
+     	  t.option_title like  '%'||decode(#optionTitle# ,'',t.option_title,#optionTitle#)||'%'
+     	</isNotEmpty>
+     	
+     	<isNotEmpty prepend="and" property="sDate">
+     	<![CDATA[  t.valid_date_s >  to_date(#sDate#,'yyyy/mm/dd') ]]>
+     	</isNotEmpty>
+     	
+     	<isNotEmpty prepend="and" property="eDate">
+     	<![CDATA[ t.valid_date_e <  to_date(#eDate#,'yyyy/mm/dd') ]]>
+     	</isNotEmpty>
+     
+     </dynamic>
+     order by t.valid_date_s desc
+   </select>
+   <update id="updateCommunication" parameterClass="communication" >
+   	 update  TRAFFIC_OPTION_COLLECT_T t
+   	 set option_title=#optionTitle#,
+   	 sub_option_title=#subTitle#,
+   	 valid_date_s=to_date(#sDate#,'yy-mm-dd'),
+   	 valid_date_e=to_date(#eDate#,'yy-mm-dd'),
+   	 option_content=#optionContent#,
+   	 option_summary=#optionSummary#,
+   	 option_status=#optionStatus#,
+   	 approvaler=#approvaler#
+   	 where 	option_id = #optionId#
+   </update>
+   <select id="getCommunicationDetail" parameterClass="communication" resultClass="communication">
+select t.option_id as optionId,
+       t.option_title as optionTitle,
+       t.sub_option_title as subTitle,
+       to_char(valid_date_s, 'yyyy-mm-dd') as sDate,
+       to_char(valid_date_e, 'yyyy-mm-dd') as eDate,
+       option_summary as optionSummary,
+       approvaler,
+       option_content as optioncontent
+  from TRAFFIC_OPTION_COLLECT_T t
+ where option_id = #optionId#
+   </select>
+   <select id="preViewcommunicationuser" parameterClass="communication" resultClass="communication">
+   select t.user_name   as userName,
+          t.id as Id,
+       t.user_dept   as userDept,
+       t.user_mail   as userMail,
+       t.user_ip     as userIp,
+       t.use_commend as userCommend
+  from TRAFFIC_OPTION_COMMEND_T t
+  where option_id=#optionId#
+   </select>
+     <select id="preViewcommunication" parameterClass="communication" resultClass="communication">
+  select t1.option_id as optionId,t1.option_title as optionTitle,
+     nvl(t1.option_content,' ') as optionContent,
+        to_char(t1.valid_date_s,'yyyy-mm-dd') as sDate,
+        to_char(t1.valid_date_e,'yyyy-mm-dd') as eDate,
+        CASE WHEN  to_char(t2.readRecordCount)=null  THEN 0
+                       ELSE  t2.readRecordCount
+                       END as readRecordCount
+       from 
+       traffic_option_collect_t  t1 left join 
+       (select option_id,  count(id) as readRecordCount
+       from
+      traffic_option_commend_t
+      where option_id=#optionId#
+      group by option_id)  t2   on       t1.option_id=t2.option_id
+       where t1.option_id=#optionId#
+      
+  </select>
+        <update id="deleteCommunication" parameterClass="communication">
+   	  delete from traffic_option_collect_t
+   	  where option_id = #optionId#
+   </update>
+   <insert id="insertCommunication" parameterClass="communication">
+insert into TRAFFIC_OPTION_COLLECT_T
+  (OPTION_ID,
+   OPTION_TITLE,
+   SUB_OPTION_TITLE,
+   VALID_DATE_S,
+   VALID_DATE_E,
+   OPTION_SUMMARY,
+   APPROVALER,
+   OPTION_CONTENT,
+   OPTION_STATUS,
+   IS_DEL)
+values(
+  #optionId#,
+  #optionTitle#,
+  #subTitle#,
+  to_date(#sDate#,'yy-mm-dd'),
+  to_date(#eDate#,'yy-mm-dd'),
+  #optionSummary#,
+  #approvaler#,
+  #optionContent#,
+  #optionStatus#,
+  '0')
+   </insert>
+           <update id="deleteCommunicationUser" parameterClass="communication">
+   	  delete from TRAFFIC_OPTION_COMMEND_T 
+   	  where id = #Id#
+   </update>
+</sqlMap>

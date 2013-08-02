@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+		"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="MagazineNewsSQL">
+<typeAlias alias="magazineNews" type="com.foxconn.cms.magazinenews.pojo.MagazineNews"/>
+ <typeAlias alias="selectBean" type="com.foxconn.pojo.SelectBean"/>  
+<select id="getMagazineNewsList" resultClass="magazineNews" parameterClass="java.util.Map">
+
+      SELECT a.MAGAZINE_ID magazineID,
+      a.magazine_number magazineNum,
+       a.MAGAZINE_TITLE magazineTitle,
+       a.ENTRY_USER pressPerson,
+       B.INFO_NAME magazineStatus
+  FROM TRAFFIC_MAGAZINE_INFO_T a, TRAFFIC_BASE_INFO_T b
+ WHERE     a.is_del = '0'
+       AND b.is_del = '0'
+       AND A.MAGAZINE_STATUS = B.INFO_ID
+      
+  
+  <dynamic>
+			<isNotEmpty  prepend="and" property="magazineTitle">
+				 MAGAZINE_TITLE like '%'||#magazineTitle#||'%'
+	    	</isNotEmpty>
+	    	<isNotEmpty  prepend="and" property="pressPerson">
+				 ENTRY_USER like '%'||#pressPerson#||'%'
+	    	</isNotEmpty>
+	    	<isNotEmpty  prepend="and" property="startTime">
+				 FLOOR (TO_DATE (magazine_number, 'yyyy-mm') - TO_DATE (#startTime#, 'yyyy-mm-dd')) >= 0
+	    	</isNotEmpty>
+	    	<isNotEmpty  prepend="and" property="endTime">
+	    	<![CDATA[
+				 FLOOR (TO_DATE (magazine_number, 'yyyy-mm') - TO_DATE (#endTime#, 'yyyy-mm-dd')) <= 0
+				 	]]>
+	    	</isNotEmpty>
+		</dynamic> 
+		
+</select>
+
+<select id="getMagazineCatalogList" resultClass="magazineNews" parameterClass="java.lang.String">
+SELECT program_id catalogID,
+       PROGRAM_NAME catalogName,
+       MAGAZINE_NUMBER magazineNum,
+       PROGRAM_ORDER catalogOrder
+  FROM TRAFFIC_MAGAZINE_PROGRAM_T
+ WHERE is_del = '0' AND MAGAZINE_ID = #magazineID#
+ order by PROGRAM_ORDER
+</select>
+<select id="getMagazineContentList" resultClass="magazineNews" parameterClass="java.util.Map">
+SELECT A.CONTENT_ID contentID,
+       b.PROGRAM_NAME catalogName,
+       a.CONTENT_TITLE contentTitle,
+       a.CONTENT_ORDER contentOrder,
+       a.MAGAZINE_STATUS magazineStatus　
+  FROM TRAFFIC_MAGAZINE_CONTENT_T a, TRAFFIC_MAGAZINE_PROGRAM_T b
+ WHERE     A.PROGRAM_ID = B.PROGRAM_ID
+       AND A.IS_DEL = '0'
+       AND B.IS_DEL = '0'
+       AND B.MAGAZINE_ID =#magazineID#
+       order by B.PROGRAM_ID, b.PROGRAM_ORDER,A.CONTENT_ORDER
+ </select>
+ <select id="getMagazineInfo" resultClass="magazineNews" parameterClass="java.lang.String">
+SELECT A.magazine_id magazineID,
+       A.MAGAZINE_TITLE magazineTitle,
+       A.MAGAZINE_NUMBER magazineNum,
+       A.MAIN_PHOTOS_URL photoURL,
+       A.MAGAZINE_FILE_URL fileURL,
+       A.APPROVALER  approvaler
+  FROM TRAFFIC_MAGAZINE_INFO_T a
+ WHERE A.IS_DEL = '0' AND A.MAGAZINE_ID = #magazineID#
+  </select>
+  <select id="getCatalogInfo" resultClass="magazineNews" parameterClass="java.lang.String">
+ SELECT b.PROGRAM_ID catalogID,
+       b.PROGRAM_NAME catalogName,
+       B.PROGRAM_ORDER catalogOrder,
+       A.MAGAZINE_NUMBER magazineNum
+  FROM TRAFFIC_MAGAZINE_INFO_T a, TRAFFIC_MAGAZINE_PROGRAM_T b
+ WHERE     A.MAGAZINE_ID = B.MAGAZINE_ID
+       AND B.PROGRAM_ID = #catalogID#
+       AND A.IS_DEL = '0'
+       AND B.IS_DEL = '0'
+  </select>
+  <update id="deleteMagazine" parameterClass="java.util.Map">
+  UPDATE TRAFFIC_MAGAZINE_INFO_T
+   SET IS_DEL = '1', MODIFY_USER = #userID#, MODIFY_DATE = SYSDATE
+ WHERE MAGAZINE_ID = #magazineID#
+
+  </update>
+  <update id="deleteCatalogByMagazineID" parameterClass="java.util.Map">
+   UPDATE TRAFFIC_MAGAZINE_PROGRAM_T
+   SET IS_DEL = '1', MODIFY_USER = #userID#, MODIFY_DATE = SYSDATE
+ WHERE MAGAZINE_ID = #magazineID#
+  </update>
+  <update id="deleteCatalogByCatalogID" parameterClass="java.util.Map">
+   UPDATE TRAFFIC_MAGAZINE_PROGRAM_T
+   SET IS_DEL = '1', MODIFY_USER = #userID#, MODIFY_DATE = SYSDATE
+ WHERE PROGRAM_ID = #catalogID#
+  </update>
+  <update id="deleteContentByMagazineID" parameterClass="java.util.Map">
+  UPDATE TRAFFIC_MAGAZINE_CONTENT_T
+   SET IS_DEL = '1', MODIFY_USER = #userID#, MODIFY_DATE = SYSDATE
+ WHERE PROGRAM_ID IN (SELECT PROGRAM_ID
+                        FROM TRAFFIC_MAGAZINE_PROGRAM_T
+                       WHERE MAGAZINE_ID = #magazineID#)
+  </update>
+   <update id="deleteContentByCatalogID" parameterClass="java.util.Map">
+  UPDATE TRAFFIC_MAGAZINE_CONTENT_T
+   SET IS_DEL = '1', MODIFY_USER = #userID#, MODIFY_DATE = SYSDATE
+ WHERE PROGRAM_ID=#catalogID#
+  </update>
+  <update id="reviewMagazine" parameterClass="java.util.Map">
+  UPDATE TRAFFIC_MAGAZINE_INFO_T
+   SET MAGAZINE_STATUS=7, MODIFY_USER = #userID#, MODIFY_DATE = SYSDATE
+ WHERE MAGAZINE_ID = #magazineID#
+
+  
+  </update>
+  <insert id="saveAsDraftByAdd" parameterClass="java.util.Map">
+  INSERT INTO TRAFFIC_MAGAZINE_INFO_T (MAGAZINE_ID,
+                                     MAGAZINE_TITLE,
+                                     MAGAZINE_NUMBER,
+                                     APPROVALER,
+                                     MAIN_PHOTOS_NAME,
+                                     MAIN_PHOTOS_URL,
+                                     MAGAZINE_FILE_NAME,
+                                     MAGAZINE_FILE_URL,
+                                     MAGAZINE_STATUS,
+                                     ENTRY_USER,
+                                     ENTRY_DATE,
+                                     IS_DEL)
+     VALUES (#magazineID#,
+             #magazineTitle#,
+             #magazineNum#,
+             #approvaler#,
+             #mainPhotosName#,
+             #mainPhotosURL#,
+             #magazineFileName#,
+             #magazineFileURL#,
+             5,
+             #userID#,
+             SYSDATE,
+             '0')
+  </insert>
+  <update id="saveAsDraftByEdit" parameterClass="java.util.Map">
+  UPDATE TRAFFIC_MAGAZINE_INFO_T
+   SET MAGAZINE_TITLE = #magazineTitle#,
+       MAGAZINE_NUMBER = #magazineNum#,
+       APPROVALER = #approvaler#,
+       MAIN_PHOTOS_NAME = decode(#mainPhotosName#,'',MAIN_PHOTOS_NAME,#mainPhotosName#),
+       MAIN_PHOTOS_URL = decode(#mainPhotosURL#,'',MAIN_PHOTOS_URL,#mainPhotosURL#),
+       MAGAZINE_FILE_NAME = decode(#magazineFileName#,'',MAGAZINE_FILE_NAME,#magazineFileName#),
+       MAGAZINE_FILE_URL =decode(#magazineFileURL#,'',MAGAZINE_FILE_URL,#magazineFileURL#),
+       MAGAZINE_STATUS=5,
+       MODIFY_DATE = SYSDATE,
+       MODIFY_USER = #userID#
+       where MAGAZINE_ID=#magazineID#
+  </update>
+  <update  id="distributeMagazineNews" parameterClass="java.util.Map">
+  UPDATE TRAFFIC_MAGAZINE_INFO_T
+   SET MAGAZINE_STATUS=decode(APPROVALER,'',7,6),
+       MODIFY_DATE = SYSDATE,
+       MODIFY_USER = #userID#
+       where MAGAZINE_ID=#magazineID#
+  </update>
+<insert id="addCatalog" parameterClass="java.util.Map">
+INSERT INTO TRAFFIC_MAGAZINE_PROGRAM_T (PROGRAM_ID,
+                                        PROGRAM_NAME,
+                                        MAGAZINE_NUMBER,
+                                        PROGRAM_ORDER,
+                                        magazine_id,
+                                        ENTRY_USER,
+                                        ENTRY_DATE,
+                                        IS_DEL)
+     VALUES (SYS_GUID (),
+             #catalogName#,
+             #magazineNum#,
+             #catalogOrder#,
+             #magazineID#,
+             #userID#,
+             SYSDATE,
+             '0')
+</insert>
+<update  id="editCatalog" parameterClass="java.util.Map">
+UPDATE TRAFFIC_MAGAZINE_PROGRAM_T
+   SET PROGRAM_NAME = #catalogName#,
+       PROGRAM_ORDER = #catalogOrder#,
+       MODIFY_DATE = SYSDATE,
+       MODIFY_USER = #userID#
+ WHERE PROGRAM_ID = #catalogID#
+</update>
+<select id="getContentInfo" parameterClass="java.lang.String" resultClass="magazineNews" >
+SELECT content_id contentID,
+       CONTENT_TITLE contentTitle,
+       SUB_CONTENT_TITLE subContentTitle,
+       CONTENT_ORDER contentOrder,
+       replace（magazine_content,'"','\"') magazineContent,
+       CONTENT_SOURCE contentSource,
+       CONTENT_KEY_WORD contentKeyWord,
+       CONTENT_SUMMARY contentSummary,
+       record_date recordDate,
+       WRITER pressPerson,
+       PROGRAM_ID catalogID
+  FROM TRAFFIC_MAGAZINE_CONTENT_T
+ WHERE CONTENT_ID = #contentID#
+</select>
+<!-- <select id="getContentInfoByPreview" parameterClass="java.lang.String" resultClass="magazineNews" >
+SELECT content_id contentID,
+       CONTENT_TITLE contentTitle,
+       SUB_CONTENT_TITLE subContentTitle,
+       CONTENT_ORDER contentOrder,
+       replace（magazine_content,'"','\"') magazineContent,
+       CONTENT_SOURCE contentSource,
+       CONTENT_KEY_WORD contentKeyWord,
+       CONTENT_SUMMARY contentSummary,
+       record_date recordDate,
+       PRESS_PERSON pressPerson,
+       PROGRAM_ID catalogID
+  FROM TRAFFIC_MAGAZINE_CONTENT_T
+ WHERE CONTENT_ID = #contentID#
+</select> -->
+<insert id="addContent" parameterClass="java.util.Map">
+INSERT INTO TRAFFIC_MAGAZINE_CONTENT_T (CONTENT_ID,
+                                        CONTENT_TITLE,
+                                        SUB_CONTENT_TITLE,
+                                        CONTENT_ORDER,
+                                        MAGAZINE_CONTENT,
+                                        CONTENT_SOURCE,
+                                        CONTENT_KEY_WORD,
+                                        CONTENT_SUMMARY,
+                                        ENTRY_USER,
+                                        ENTRY_DATE,
+                                        IS_DEL,
+                                        WRITER,
+                                        PROGRAM_ID,
+                                        record_date)
+     VALUES (SYS_GUID(),
+             #contentTitle#,
+             #subContentTitle#,
+             #contentOrder#,
+             #content#,
+             #contentSource#,
+             #keyWord#,
+             #summary#,
+             #userID#,
+             SYSDATE,
+             '0',
+             #pressPerson#,
+             #catalogID#,
+             #recordDate#)
+</insert>
+<update  id="editContent" parameterClass="java.util.Map">
+UPDATE TRAFFIC_MAGAZINE_CONTENT_T
+   SET CONTENT_TITLE = #contentTitle#,
+       SUB_CONTENT_TITLE = #subContentTitle#,
+       CONTENT_ORDER = #contentOrder#,
+       MAGAZINE_CONTENT= #content#,
+       CONTENT_SOURCE = #contentSource#,
+       CONTENT_KEY_WORD = #keyWord#,
+       CONTENT_SUMMARY = #summary#,
+       MODIFY_DATE= SYSDATE,
+       MODIFY_USER= #userID#,
+       WRITER= #pressPerson#,
+       record_date=#recordDate#
+ WHERE CONTENT_ID = #contentID#
+</update>
+<update id="deleteContent" parameterClass="java.util.Map">
+   UPDATE TRAFFIC_MAGAZINE_CONTENT_T
+   SET IS_DEL = '1', MODIFY_USER = #userID#, MODIFY_DATE = SYSDATE
+ WHERE CONTENT_ID = #contentID#
+  </update>
+  <select id="getContentSourceList" resultClass="selectBean" >
+SELECT B.INFO_ID value, B.INFO_NAME label
+  FROM TRAFFIC_BASE_TYPE_T a, TRAFFIC_BASE_INFO_T b
+ WHERE     A.TYPE_ID = B.TYPE_ID
+       AND A.TYPE_ID = 1
+       AND A.IS_DEL = '0'
+       AND B.IS_DEL = '0'
+</select>
+<select id="getMagazineDetailByID" resultClass="magazineNews" parameterClass="java.lang.String">
+      	SELECT B.PROGRAM_ID catalogID,
+      	B.PROGRAM_NAME catalogName,
+      	C.CONTENT_ID contentID,
+        C.CONTENT_TITLE contentTitle,
+        C.MAGAZINE_CONTENT magazineContent
+  FROM TRAFFIC_MAGAZINE_PROGRAM_T b, TRAFFIC_MAGAZINE_CONTENT_T c
+ WHERE     B.MAGAZINE_ID = #magazineID#
+       AND B.PROGRAM_ID = C.PROGRAM_ID
+       AND B.IS_DEL = 0
+       AND C.IS_DEL = 0
+</select>
+<select id="getMagazineNumList" resultClass="selectBean">
+ SELECT MAGAZINE_ID value, MAGAZINE_NUMBER label
+  FROM TRAFFIC_MAGAZINE_INFO_T
+ WHERE IS_DEL = '0'
+ </select>
+</sqlMap>

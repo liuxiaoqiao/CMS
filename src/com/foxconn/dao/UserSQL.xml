@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap
+	PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+		"http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="Users">
+	<typeAlias alias="Users" type="com.foxconn.pojo.UserDetail" />
+	<!-- modified by Cube @130724. added the role info of the user. -->
+	<select id="queryUserByCode" parameterClass="String"
+		resultClass="Users">
+		SELECT a.USER_ID AS userId,
+		a.USER_NO AS userNo,
+		a.PASSWORD
+		AS password,
+		a.CREATE_DATE AS createDate,
+		a.CREATE_USERID AS
+		createUserId,
+		a.UPDATE_DATE AS updateDate,
+		a.UPDATE_USERID AS
+		updateUserId,
+		a.ENABLED AS enabled,
+		C.ROLE_ID AS roleID,
+		C.ROLE_NAME AS
+		roleName,
+		C.DESCRIPTION AS roleDesc
+		FROM traffic_users a
+		JOIN
+		TRAFFIC_USER_ROLE b
+		ON a.USER_NO = #userNo#
+		AND a.ENABLED = 1
+		AND
+		A.USER_ID = B.USER_ID
+		JOIN TRAFFIC_ROLE c
+		ON B.ROLE_ID = C.ROLE_ID
+	</select>
+
+	<select id="Login" parameterClass="Users" resultClass="Users">
+		select
+		USER_ID as userId,
+		USER_NO as userNO,
+		PASSWORD as password,
+		CREATE_DATE
+		as createDate,
+		CREATE_USERID as createUserId,
+		UPDATE_DATE as updateDate,
+		UPDATE_USERID as updateUserId,
+		ENABLED as enabled
+		from
+		traffic_users
+		where
+		USER_NO = #userNo#
+		and PASSWORD = #password#
+		and ENABLED = 1
+	</select>
+
+	<insert id="AddUser" parameterClass="Users">
+		INSERT INTO TRAFFIC_USERS
+		(USER_ID,
+		USER_NO,
+		PASSWORD,
+		CREATE_DATE,
+		CREATE_USERID,
+		UPDATE_DATE,
+		UPDATE_USERID,
+		ENABLED,
+		USER_NAME,
+		DEPT_ID)
+		VALUES (#userId#,
+		#userNo#,
+		#password#,
+		#createDate#,
+		#createUserno#,
+		#updateDate#,
+		#updateId#,
+		#userStatus#,
+		#userName#,
+		#deptID#)
+	</insert>
+
+	<update id="UpdateUser" parameterClass="Users">
+		UPDATE TRAFFIC_USERS
+		SET
+		USER_NO = #userNo#,
+		PASSWORD = #password#,
+		UPDATE_DATE = #updateDate#,
+		UPDATE_USERID = #updateId#,
+		USER_NAME = #userName#,
+		DEPT_ID = #deptID#
+		WHERE USER_ID = #userId#
+	</update>
+
+	<update id="DeleteUser" parameterClass="String">
+		UPDATE TRAFFIC_USERS
+		SET
+		ENABLED = '0'
+		WHERE USER_ID = #userId#
+	</update>
+
+	<select id="SelectUser" parameterClass="java.util.Map"
+		resultClass="Users">
+		SELECT a.USER_ID userId,
+		a.USER_NO userNo,
+		a.PASSWORD password,
+		a.CREATE_DATE createDate,
+		a.CREATE_USERID createUserno,
+		a.UPDATE_DATE
+		updateDate,
+		a.UPDATE_USERID updateId,
+		a.ENABLED userStatus,
+		a.USER_NAME
+		userName,
+		a.DEPT_ID deptID,
+		B.INFO_NAME AS deptName,
+		D.DESCRIPTION AS
+		roleDesc
+		FROM TRAFFIC_USERS a
+		JOIN TRAFFIC_BASE_INFO_T b
+		ON A.DEPT_ID =
+		B.INFO_ID
+		JOIN TRAFFIC_USER_ROLE c
+		ON A.USER_ID = C.USER_ID
+		JOIN
+		TRAFFIC_ROLE d
+		ON C.ROLE_ID = D.ROLE_ID
+		<dynamic>
+			<isNotEmpty prepend="and" property="userNo">
+				a.user_no LIKE '%' ||
+				#userNo# || '%'
+			</isNotEmpty>
+			<isNotEmpty prepend="and" property="infoID">
+				B.INFO_ID = #infoID#
+			</isNotEmpty>
+			<isNotEmpty prepend="and" property="roleID">
+				D.ROLE_ID = #roleID#
+			</isNotEmpty>
+		</dynamic>
+	</select>
+</sqlMap>

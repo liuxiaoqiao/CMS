@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+ PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="LeaderInfo">
+ <typeAlias alias="leaderInfo"  type="com.foxconn.cms.leaderinfo.pojo.LeaderInfo"/>
+   <select id="getLeaderInfoList" parameterClass="leaderInfo" resultClass="leaderInfo">
+   	 select a.Leader_ID leaderID,a.Leader_Name leaderName,a.Leader_Post leaderPost,
+   	 a.Status statusID, b.Info_Name statusName
+   	 from Traffic_Leader_Info_T a
+   	 join Traffic_Base_Info_T b
+   	 on  a.Status=b.Info_ID
+   	 and b.is_del='0'
+   	 where a.is_del='0'
+   	 order by a.modify_date desc
+   </select>
+   
+   <select id="getLeaderInfoDetail" parameterClass="leaderInfo" resultClass="leaderInfo">
+   	 select a.Leader_ID leaderID,a.Leader_Name leaderName,a.Leader_Post leaderPost,a.Leader_Order leaderOrder,
+   	 a.Leader_Photos_Url leaderPhotosUrl,a.Approvaler approvaler,a.Leader_Resume leaderResume,
+   	 a.Status statusID,a.LEADER_PHOTOS_NAME leaderPhotosName
+   	 from Traffic_Leader_Info_T a
+   	 where
+   	 a.Leader_ID = #leaderID#
+   </select>
+   
+   <update id="deleteLeaderInfo" parameterClass="leaderInfo">
+   	 update Traffic_Leader_Info_T
+   	 set is_del='1',modify_date=sysdate,modify_user=#modifyUser#
+   	 where Leader_ID = #leaderID#
+   </update>
+   
+   <update id="updateLeaderInfo" parameterClass="leaderInfo">
+    update Traffic_Leader_Info_T
+     set Leader_Name=#leaderName#,Leader_Post=#leaderPost#,Leader_Order=#leaderOrder#,
+     Leader_Photos_Url=#leaderPhotosUrl#,Approvaler=#approvaler#,Leader_Resume=#leaderResume#,
+     Status=#statusID#,MODIFY_DATE=sysdate,LEADER_PHOTOS_NAME=#leaderPhotosUrl#,
+     MODIFY_USER=#modifyUser#
+    where Leader_ID = #leaderID#
+   </update>
+   
+   <update id="updateRefuseLeaderStatus" parameterClass="leaderInfo">
+   	  update Traffic_Leader_Info_T
+   	 set  STATUS=#statusID#,modify_date=sysdate,modify_user=#modifyUser#
+   	 where Leader_ID = #leaderID#
+   </update>
+  
+   <insert id="insertLeaderInfo" parameterClass="leaderInfo">
+   	 insert into Traffic_Leader_Info_T(
+   	 Leader_ID,Leader_Name,Leader_Post,Leader_Order,Leader_Photos_Url,
+   	 Approvaler,Leader_Resume,ENTRY_USER,ENTRY_DATE,MODIFY_DATE,MODIFY_USER,Is_Del,Status,LEADER_PHOTOS_NAME
+   	 )
+   	 values(
+   	 sys_guid(),#leaderName#,#leaderPost#,#leaderOrder#,#leaderPhotosUrl#,#approvaler#,
+   	 #leaderResume#,#entryUser#,sysdate,sysdate,#modifyUser#,'0',#statusID#,#leaderPhotosName#
+   	 )
+   </insert>
+</sqlMap>

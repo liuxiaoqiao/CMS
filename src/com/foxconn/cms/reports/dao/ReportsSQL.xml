@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap
+ PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="ReportsSQL">
+  <select id="getAnalysisUsingManuscript"  parameterClass="java.util.Map"  resultClass="java.util.HashMap">
+   select a.info_name as SOURCENAME,a.c1 as COUNTS ,b.sc2 as TOTLE, to_char(c1*100/sc2,'990.9')||'%' as PERCENT
+   from
+   (
+    select tn.info_name,count(ts.sou) as c1 from(
+    select tp.photos_news_source as sou,modify_date as m_date   from TRAFFIC_PHOTOS_NEWS_T tp
+    union all
+    select  tt.news_source as sou,modify_date  as m_date from TRAFFIC_TEXT_NEWS_INFO_T tt
+    union all
+    select  tv.video_news_source as sou,modify_date  as m_date from TRAFFIC_VIDEO_NEWS_T tv) ts,
+    (select t_name.info_id,t_name.info_name from TRAFFIC_BASE_INFO_T t_name) tn
+    where ts.sou=tn.info_id
+    and 
+    ts.m_date between to_date(#sDate#,'yyyy/mm/dd') and to_date(#eDate#,'yyyy/mm/dd')
+    group by tn.info_name, ts.sou)a
+    ,
+    (
+    select sum(c2) as sc2 from(
+    select count(ts.sou) c2 from(
+    select tp.photos_news_source as sou,modify_date as m_date   from TRAFFIC_PHOTOS_NEWS_T tp
+    union all
+    select  tt.news_source as sou,modify_date  as m_date from TRAFFIC_TEXT_NEWS_INFO_T tt
+    union all
+    select  tv.video_news_source as sou,modify_date  as m_date from TRAFFIC_VIDEO_NEWS_T tv) ts,
+    (select t_name.info_id,t_name.info_name from TRAFFIC_BASE_INFO_T t_name) tn
+    where ts.sou=tn.info_id
+    and 
+    ts.m_date between to_date(#sDate#,'yyyy/mm/dd') and to_date(#eDate#,'yyyy/mm/dd')
+    group by tn.info_name, ts.sou))b
+  </select> 
+  
+  
+  <select id="getAnalysisaccess"  parameterClass="java.util.Map"  resultClass="java.util.HashMap">
+  select type,news_id,news_title,publisher,writer,modify_date,read_count from
+(
+  select type,news_id,news_title,publisher,writer,modify_date,read_count from(
+      select '交通图片' as type, 
+      tp.photos_news_id as news_id,
+      tp.photos_news_title as news_title,
+      tp.entry_user as publisher,
+      tp.writer as writer,
+      tp.modify_date as modify_date,
+       tp.read_count as read_count
+      from traffic_photos_news_t tp 
+      where 
+      <![CDATA[ rownum <#ranknum#+1    ]]>
+      
+       and tp.modify_date between to_date(#sDate#,'yyyy/mm/dd')  and to_date(#eDate#,'yyyy/mm/dd')
+      order by read_count desc
+)
+ union   
+ select type,news_id,news_title,publisher,writer,modify_date,read_count from
+ (
+    select tpi.module_name as type,
+     tt.news_id as news_id,
+     tt.news_title as news_title,
+     tt.entry_user as publisher,
+     tt.writer as writer,
+     tt.modify_date as modify_date,
+     tt.readcount as read_count  
+      from TRAFFIC_TEXT_NEWS_INFO_T tt  ,TRAFFIC_PAGE_INFO_T tpi
+      where  <![CDATA[ rownum <#ranknum# +1   ]]>
+      and  tt.program_type=tpi.page_id
+      and tt.modify_date between to_date(#sDate#,'yyyy/mm/dd')  and to_date(#eDate#,'yyyy/mm/dd') 
+      order by read_count desc
+)     
+union
+select type,news_id,news_title,publisher,writer,modify_date,read_count from
+(
+    select '交通视频' as type, 
+    tv.video_news_id as news_id,
+    tv.video_news_name as news_title,
+    tv.entry_user as publisher,
+    tv.writer as writer,
+    tv.modify_date as modify_date,
+    tv.read_count as read_count
+    from TRAFFIC_VIDEO_NEWS_T tv
+    where 
+      tv.modify_date between to_date(#sDate#,'yyyy/mm/dd')  and to_date(#eDate#,'yyyy/mm/dd') 
+    ) where <![CDATA[ rownum <#ranknum#+1    ]]>  order by read_count desc
+) 
+ where  <![CDATA[ rownum <#ranknum# +1    ]]>
+ order by read_count desc
+ </select>
+    	
+</sqlMap>
